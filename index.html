@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.8.1/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.8.1/mapbox-gl.js"></script>
+    <title>Počasie na mape s vrstvami a ovládaním</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/waves/0.7.6/waves.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/waves/0.7.6/waves.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/waves/0.7.6/waves.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/waves/0.7.6/waves.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/maptalks/dist/maptalks.css">
+    <script type="text/javascript" src="https://unpkg.com/maptalks/dist/maptalks.min.js"></script>
+<link href="https://api.mapbox.com/mapbox-gl-js/v3.6.0/mapbox-gl.css" rel="stylesheet">
+<script src="https://api.mapbox.com/mapbox-gl-js/v3.6.0/mapbox-gl.js"></script>
+    <style>
+        #map {
+            width: 100%;
+            height: auto;
+            position: absolute;
+            top: 0;
+            bottom: 10%;
+            left: 0;
+            right: 0;
+            z-index: auto;
+        }
+/* Prispôsobené štýly pre panel vrstiev */
+.layer-controls {
+    display: none;
+    position: absolute ;
+    width: auto;
+    top: 3%;
+    right: 10px;
+    z-index: 1000;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(230, 230, 230, 0.9));
+    padding: 15px;
+    border-radius: 10px;
+    border: 2px solid transparent;
+    border-image: linear-gradient(135deg, #4CAF50, #00c853) 1;
+    font-family: 'Arial', sans-serif;
+}
+
+@media only screen and (max-width: 730px){
+  /* Prispôsobené štýly pre panel vrstiev */
+.layer-controls {
+    display: none;
+    position: absolute ;
+    width: auto;
+    top: 8%;
+    right: 10px;
+    z-index: 1000;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(230, 230, 230, 0.9));
+    padding: 15px;
+    border-radius: 10px;
+    border: 2px solid transparent;
+    border-image: linear-gradient(135deg, #4CAF50, #00c853) 1;
+    font-family: 'Arial', sans-serif;
+}
+}
+
+/* Štýly pre tlačidlo, ktoré ovláda zobrazenie vrstiev */
+.toggle-button {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 1000;
+    background: linear-gradient(135deg, #4CAF50, #00c853);
+    color: white;
+    padding: 10px;
+    text-align: center;
+    border-radius: 5px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.3s ease;
+    font-family: 'Arial', sans-serif;
+}
+
+
+        .toggle-button:hover {
+            background: linear-gradient(135deg, #45a049, #009624);
+            border-image: linear-gradient(135deg, #4CAF50, #00c853) 1;
+        }
+
+        button {
+            background: linear-gradient(135deg, #2196F3, #03A9F4);
+            color: white;
+            padding: 10px 15px;
+            margin: 5px;
+            border-radius: 5px;
+            border: 2px solid transparent;
+            background-clip: padding-box;
+            cursor: pointer;
+            font-family: 'Arial', sans-serif;
+            transition: all 0.3s ease;
+        }
+        button:hover {
+            background: linear-gradient(135deg, #1976D2, #0288D1);
+            border-image: linear-gradient(135deg, #2196F3, #03A9F4) 1;
+        }
+        .time-display {
+            background: linear-gradient(135deg, #4CAF50, #00c853);
+            color: #fff;
+            padding: 10px 20px;
+            margin-top: 10px;
+            border-radius: 5px;
+            border: 2px solid transparent;
+            background-clip: padding-box;
+            font-family: 'Arial', sans-serif;
+            text-align: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+   .controls {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(230, 230, 230, 0.9));
+            padding: 5px;
+            border-radius: 10px;
+            border: 2px solid transparent;
+            border-image: linear-gradient(135deg, #2196F3, #03A9F4) 1;
+            margin-top: 10px;
+            margin-left: 10px;
+            font-family: 'Arial', sans-serif;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            position: absolute;
+            bottom: 15%;
+            right: 5%;
+            z-index: 1000;
+        }
+        .legend-container {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            transform: translateX(0);
+            width: auto;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            font-family: 'Arial', sans-serif;
+            color: #333;
+            text-align: center;
+        }
+        .legend-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+            text-align: center;
+            background: linear-gradient(135deg, #2196F3, #03A9F4);
+            padding: 5px;
+            color: white;
+            border-radius: 5px;
+        }
+        .legend-scale {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .legend-scale div {
+            height: 20px;
+            flex-grow: 1;
+        }
+        .legend-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 5px;
+        }
+        .legend-labels span {
+            font-size: 0.9em;
+        }
+        .legendImage {
+            width: 100%;
+            display: block;
+            margin: 0 auto;
+        }
+        
+        
+.custom-popup {
+    position: absolute;
+top: 50%;
+left: 50%;
+right: 50%;
+width: 90%;
+transform: translate(-50%, -50%);
+    background-color: rgba(0, 0, 0, 0.8);
+    box-shadow: 0 0 15px rgba(255, 253, 253, 0.75);
+    padding: 20px;
+    z-index: 1000;
+    max-width: 95%;
+    max-height: 95%;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    backdrop-filter: blur(5px);
+    animation: fadeIn 0.5s infinite;
+    animation-iteration-count: initial;
+}
+
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -45%);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%);
+    }
+}
+
+.popup-content {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    margin-top: 40px; /* space for the close button */
+}
+
+.popup-box {
+    flex: 1 1 calc(33.33% - 20px);
+    margin: 10px;
+    background: #FBFBFB;
+    padding: 10px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    font-size: 12px;
+    text-align: center;
+}
+
+.popup-box h4 {
+    margin-top: 0;
+    color: #333;
+}
+
+.popup-box p {
+    margin: 5px;
+    color: #666;
+}
+
+.weather-icon {
+    width: 50px;
+    height: 50px;
+    margin-bottom: 10px;
+    border-radius: 50px;
+}
+
+.close-button {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: #e57373;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 5px 10px;
+    cursor: pointer;
+    font-size: 16px;
+    z-index: 1001; /* Ensure it is above the popup */
+}
+
+.close-button:hover {
+    background: #d32f2f;
+}
+
+
+.overflow1 {
+  position: absolute;
+  z-index: 999;
+  height: 100px;
+  left: 0;
+  top: 0;
+  right: 0;
+  background: transparent;
+}
+
+div.map-container {
+    position: relative;
+    overflow: hidden;
+    width: 5px;
+    display: inline-block;
+}
+
+/* Existujúca trieda ripple */
+.ripple {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(0, 150, 0, 0.3);
+    transform: scale(0);
+    animation: ripple-animation 1s ease-out;
+}
+
+@keyframes ripple-animation {
+    to {
+        transform: scale(4);
+        opacity: 0;
+    }
+}
+
+/* Nové triedy pre viacnásobné vlnky */
+.ripple-delay-1 {
+    animation-delay: 0s;
+    background-color: rgba(255, 255, 255, 0.8);
+}
+
+.ripple-delay-2 {
+    animation-delay: 0.2s;
+    background-color: rgba(255, 255, 255, 1);
+}
+
+.ripple-delay-3 {
+  animation-delay: 0.5s;
+  background-color: rgba(122, 255, 0, 1);
+}
+
+@keyframes ripple-animation {
+    to {
+        transform: scale(0.05);
+        opacity: 0;
+    }
+}
+
+
+.cursor {
+  width: 5px;
+  height: 5px;
+  border: 2px solid rgba(122, 255, 0, 1);
+  border-radius: 50%; /* Aby bol kurzor okrúhly */
+  position: absolute;
+  pointer-events: none; /* Zabezpečí, že kurzor neinteraguje s inými elementmi */
+  transform: translate(-50%, -50%); /* Centruje kurzor na klikanie */
+  z-index: 2000;
+  box-shadow: 0 0 7px rgba(255, 255, 255, 1);
+}
+
+h2 {
+  color: #fff;
+  
+}
+
+
+
+    </style>
+</head>
+<body>
+
+<div id="map"></div>
+<div class="controls">
+<div class="overflow1"></div>
+<div class="overflow2"></div>
+</div>
+<div class="cursor"></div> 
+<div id="legend-container" class="legend-container"></div>
+<div id="welcomeModal" class="modal">
+  <div class="modal-content">
+    <span id="closeModal" class="close">&times; <span style="font-size: 17px;">Zavrieť</span></span>
+    <h2>Vitajte na 3D mape počasia!</h2>
+    <p>Táto mapa obsahuje aktuálne počasie a predpoveď počasia pre rôzne vrstvy, ako sú teplota, vietor, oblačnosť a ďalšie. Pomocou tlačidla „Zobraziť vrstvy“ môžete pridávať alebo odoberať vrstvy.</p>
+    <p>Na mape môžete kliknúť na akúkoľvek oblasť a získať detailné informácie o počasí pre zvolenú lokalitu.</p>
+    <p>Pomocou tlačidiel „Späť -3h“ a „Ďalšie +3h“ môžete prechádzať medzi jednotlivými hodinami predpovede.</p>
+    <p>Mapa je vo forme glóbusu, teda v 3D formátu. Pretože sa chceme čoraz zlepšovať, neustále sa do 3D mapy budú do budúcna pridávať nové a nové aktualizácie (štýlový dizajn, efekty a pod... )</p>
+    <p>Pre lepšiu predstavu vám umožní aj 3D zobrazenie už v 3D globuse a to tak, že položíte dva hlavné palce na mapu a potiahnete nim zhora alebo zdola</p>
+    <div class="img-content">
+      <img src="globe.png" alt="Ilustračné foto - 3D mapa" class="globeImg" />
+    </div>
+                <img src="https://www.meteopocasie.sk/wp-content/uploads/2023/12/Untitled49_20231209213754.png" alt="Logo stránky MeteoPočasie.sk" class="logoImg" /> 
+  </div>
+</div>
+
+<style>
+/* CSS pre animáciu */
+.modal {
+  display: none; /* Skryté, kým sa nezobrazí */
+  position: absolute;
+  overflow-y: auto;
+  z-index: 9999; /* Aby bolo navrchu všetkých prvkov */
+  left: 0;
+  right: 0;
+  bottom: 0;
+  top: 0;
+  background-color: rgba(0, 0, 0, 0.6); /* Tmavé pozadie */
+  backdrop-filter: blur(5px);
+  box-shadow: 0 4px 8px rgba(155, 255, 105, 0.88);
+}
+
+/* Obsah modalu */
+.modal-content {
+  background-color: transparent;
+  margin: 15% auto;
+  padding: 20px;
+  width: auto;
+  color: #ffffff;
+  text-align: center;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  top: 0;
+  bottom: 0;
+  position: absolute;
+}
+
+.modal.show {
+  display: block;
+  opacity: 1;
+}
+
+.modal-content.show {
+  transform: translateY(0);
+}
+
+.close {
+  font-size: 24px;
+}
+
+.globeImg {
+  width: 140px;
+  height: auto;
+  position: absolute;
+  left: 15%;
+}
+
+
+.logoImg {
+  width: 100px;
+  height: auto;
+  position: absolute;
+  right: 15%;
+}
+</style>
+
+<script>
+// Funkcia na zobrazenie modalu po načítaní stránky s animáciou
+window.addEventListener('load', function() {
+    const modal = document.getElementById("welcomeModal");
+    const closeModal = document.getElementById("closeModal");
+    const modalContent = document.querySelector('.modal-content');
+
+    // Zobraziť modal ihneď po načítaní stránky s animáciou
+    modal.style.display = "block"; // Nastavíme zobrazenie modalu
+    setTimeout(() => {
+        modal.classList.add("show"); // Pridanie triedy na animáciu opacity
+        modalContent.classList.add("show"); // Pridanie triedy na posun obsahu
+    }, 100); // Malá pauza pre hladký efekt
+
+    // Ak používateľ klikne na "X", modal sa zatvorí
+    closeModal.onclick = function() {
+        modal.classList.remove("show");
+        modalContent.classList.remove("show");
+        setTimeout(() => {
+            modal.style.display = "none"; // Skryť modal po animácii
+        }, 500); // Počkať, kým skončí animácia
+    };
+
+    // Ak používateľ klikne kdekoľvek mimo modalu, modal sa zatvorí
+    window.onclick = function(event) {
+        if (event.target == modal) {
+            modal.classList.remove("show");
+            modalContent.classList.remove("show");
+            setTimeout(() => {
+                modal.style.display = "none"; // Skryť modal po animácii
+            }, 1500); // Počkať, kým skončí animácia
+        }
+    };
+});
+</script>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function() {
+    mapboxgl.accessToken = 'pk.eyJ1IjoibmNpa2FsYSIsImEiOiJja3NhbGNqaTkxMWh1MnVsdWNjaWppOTkxIn0.VRSFufdvlbGJ6PwnucFc1Q'; // Nahraď svojím Mapbox tokenom
+    
+    
+    
+    const apiKey = 'b1b15e88fa797225412429c1c50c122a1'; // Nahraď svojím API kľúčom
+    let currentDate = new Date(); // Aktuálny dátum
+    let activeLayers = {}; // Aktívne vrstvy
+
+    const mapLayers = {
+  "Teplota": {
+    code: "TA2",
+    url: `http://maps.openweathermap.org/maps/2.0/weather/TA2/{z}/{x}/{y}?date={date}&opacity=0.8&palette=-45:FBF4FF;-40:FFFCFF;-35:FFDAFA;-30:E1ABFF;-25:CF78FF;-20:8D78FF;-15:5872FF;-10:0054FF;-5:00A6FF;0:00F7FF;5:00FF0B;10:9FFF00;15:FFF600;20:F5BE00;25:FF6F00;30:FF2600;35:BE0202;40:9800FF;45:6118B4;50:2D1F8F&fill_bound=true&appid=${apiKey}`
+  },
+  "Tlak": {
+    code: "APM",
+    url: `http://maps.openweathermap.org/maps/2.0/weather/APM/{z}/{x}/{y}?date={date}&opacity=0.8&palette=94000:0073FF; 96000:00AAFF; 98000:FFDAFA; 100000:8DE7C7; 101000:B0F720; 102000:F0B800; 104000:FB5515; 106000:F3363B; 108000:C60000&fill_bound=true&appid=${apiKey}`
+  },
+  "Vietor": {
+    code: "WND",
+    url: `http://maps.openweathermap.org/maps/2.0/weather/WND/{z}/{x}/{y}?date={date}&opacity=0.8&palette=1:0073FF; 5:00AAFF; 10:4BD0D6; 15:8DE7C7; 20:B0F720; 30:F0B800; 60:FB5515; 90:F3363B; 180:C60000&fill_bound=true&appid=${apiKey}`
+  },
+  "Relatívna vlhkosť": {
+    code: "HRD0",
+    url: `http://maps.openweathermap.org/maps/2.0/weather/HRD0/{z}/{x}/{y}?date={date}&opacity=0.8&palette=0:C60000;20:F3363B;40:FB5515;60:F0B800;70:B0F720;80:8DE7C7;90:4BD0D6;100:00AAFF;100.1:0073FF&fill_bound=true&appid=${apiKey}`
+  },
+  "Oblačnosť": {
+    code: "CL",
+    url: `http://maps.openweathermap.org/maps/2.0/weather/CL/{z}/{x}/{y}?date={date}&opacity=0.8&palette=0:00000000; 10:F0F8FF; 20:E6F1F5; 30:D0E5E990; 40:B8D8E5; 50:A0CBDD; 60:8ABBD2; 70:6DA5C4; 80:5D9BCC; 90:4A8BBE; 100:3578A5; 200:2D6A8D&fill_bound=true&appid=${apiKey}`
+  },
+  "Sneh": {
+    code: "PAS0",
+    url: `http://maps.openweathermap.org/maps/2.0/weather/PAS0/{z}/{x}/{y}?date={date}&opacity=0.8&palette=0:00000000;5:00AAFF;10:4BD0D6;15:8DE7C7;20:B0F720;30:F0B800;40:FB5515;80:F3363B;120:C60000;180:9800FF;360:6118B4&fill_bound=true&appid=${apiKey}`
+  },
+  "Dážď": {
+    code: "PAR0",
+    url: `http://maps.openweathermap.org/maps/2.0/weather/PAR0/{z}/{x}/{y}?date={date}&opacity=0.8&palette=0:00000000; 0.1:00AAFF; 0.2:4BD0D6; 0.5:8DE7C7; 1:B0F720; 5:F0B800; 10:FB5515; 20:F3363B; 40:C60000;80:9800FF;160:6118B4&fill_bound=true&appid=${apiKey}`
+  },
+  "Hĺbka snehu": {
+    code: "SD0",
+    url: `http://maps.openweathermap.org/maps/2.0/weather/SD0/{z}/{x}/{y}?date={date}&opacity=0.5&palette=0:00000000; 0.1:00AAFF; 0.2:4BD0D6; 0.3:8DE7C7; 0.4:B0F720; 0.5:F0B800; 1:FB5515; 1.5:F3363B; 3:C60000; 4:9800FF; 8:6118B4; 16:6118B4; 32:6118B4&fill_bound=true&appid=${apiKey}`
+  },
+  "Rosný bod": {
+    code: "TD2",
+    url: `http://maps.openweathermap.org/maps/2.0/weather/TD2/{z}/{x}/{y}?date={date}&opacity=0.8&palette=-60:FBF4FF;-55:FFFCFF;-50:FFDAFA;-45:E1ABFF;-40:CF78FF;-35:8D78FF;-30:5872FF;-25:0054FF;-20:00A6FF;-15:00F7FF;-10:00FF0B;-5:9FFF00;0:FFF600;5:F5BE00;10:FF6F00;15:FF2600;20:BE0202;25:9800FF;30:6118B4;50:2D1F8F&fill_bound=true&appid=${apiKey}`
+  },
+  "Konvektívne zrážky": {
+    code: "PAC0",
+    url: `http://maps.openweathermap.org/maps/2.0/weather/PAC0/{z}/{x}/{y}?date={date}&opacity=0.8&palette=0:00000000;1:B0F720; 10:FFF000; 20:F0B800; 40:F3363B; 100:C60000; 200:6118B4&fill_bound=true&appid=${apiKey}`
+  }
+};
+
+    const map = new mapboxgl.Map({
+        container: 'map',
+        style: 'mapbox://styles/mapbox/satellite-streets-v11',
+        center: [-106.6494, 40.04177],
+        zoom: 0.5,
+        pitch: 60,
+        bearing: 40,
+        antialias: true,
+        projection: 'globe' // Ensure the globe projection is enabled
+    });
+    
+    
+// Animácia kamery pri načítaní mapy
+map.on('load', () => {
+  map.flyTo({
+    center: [19.1451, 48.6690], // Koncové súradnice (Slovensko)
+    zoom: 5, 
+    minZoom: 0.3,
+    speed: 0.6, // Rýchlosť animácie (čím nižšie číslo, tým pomalšia animácia)
+    curve: 1, // Krivka animácie (1 = rovnomerná rýchlosť)
+    easing: (t) => t, // Funkcia easing
+    essential: true, // Všetky mapy musia podporovať túto animáciu
+    pitch: 0,
+    bearing: 0
+  });
+});
+
+    map.on('style.load', () => {
+        map.setFog({
+          "range": [0.01, 1],
+    "color": "#63ADFF",
+    "horizon-blend": 0.1,
+    "high-color": "#000000",
+    "space-color": "#000000",
+    "star-intensity": 1
+        }); // Enable fog for 3D globe effect
+    });
+    
+   
+            
+
+
+
+    function addWeatherLayer(layerName) {
+        const layer = mapLayers[layerName];
+        if (!layer) return;
+
+        const dateString = Math.floor(currentDate.getTime() / 1000); // UNIX timestamp
+        const layerUrl = layer.url.replace('{date}', dateString);
+
+        map.addSource(layer.code, {
+            'type': 'raster',
+            'tiles': [layerUrl],
+            'tileSize': 256
+        });
+
+        map.addLayer({
+            'id': layer.code,
+            'type': 'raster',
+            'source': layer.code,
+            'paint': {
+                'raster-opacity': 0.8
+            }
+        });
+
+        activeLayers[layer.code] = layer.code;
+    }
+
+    function removeWeatherLayer(layerCode) {
+        if (activeLayers[layerCode]) {
+            map.removeLayer(layerCode);
+            map.removeSource(layerCode);
+            delete activeLayers[layerCode];
+        }
+    }
+
+    function updateLayers() {
+        for (const layerCode in activeLayers) {
+            removeWeatherLayer(layerCode);
+        }
+
+        $('input[type="checkbox"]:checked').each(function() {
+            const layerName = $(this).val();
+            addWeatherLayer(layerName);
+        });
+    }
+
+    function updateTimeDisplay() {
+        $('#time-display').text('Aktuálny dátum: ' + currentDate.toLocaleString());
+    }
+    
+    
+    
+    
+
+    function showLegend(layerCode) {
+        let legendUrl = '';
+        switch (layerCode) {
+          case 'TA2':
+            legendUrl = 't2m.png'; // Nahraď vlastnou URL pre legendu teploty
+            break;
+          case 'APM':
+            legendUrl = 'hPa.png'; // Nahraď vlastnou URL pre legendu tlaku
+            break;
+          // Pridajte ďalšie prípady pre iné vrstvy a ich legendy
+          case 'WND':
+            legendUrl = 'wind.png'; 
+            break; // Nahraď vlastnou URL pre legendu rýchlosti vetra 
+            
+            case 'HRD0':
+              legendUrl = 'humidity.png';
+            break; // Nahraď vlastnou URL pre legendu vlhkosti
+            
+            case 'CL':
+              legendUrl = 'cloud.png';
+              break; // Nahraď vlastnou URL pre legendu oblačnosti
+              
+              case 'PAS0':
+              legendUrl = 'snow.png';
+              break; // Nahraď vlastnou URL pre legendu akumulácie snehu
+              
+              case 'PAR0':
+              legendUrl = 'rain.png';
+              break; // Nahraď vlastnou URL pre legendu akumulácie dažďa 
+              
+              case 'TD2':
+                legendUrl = 'dewPoint.png'
+                break; // Nahraď vlastnou URL pre legendu rosneho bodu
+                
+                case 'PAC0':
+                legendUrl = 'convective.png'
+                break; // Nahraď vlastnou URL pre legendu konvektívnych zrážok 
+        }
+        $('#legend-container').html(`<img class="legendImage" src="${legendUrl}" alt="Legenda" />`);
+      }
+      
+      map.on('load', () => {
+  addWeatherLayer("Teplota"); // Add the default "Teplota" layer on map load
+  showLegend(mapLayers["Teplota"].code); // Show the legend for "Teplota"
+});
+      
+
+    let layerControlsDiv = document.createElement('div');
+    layerControlsDiv.className = 'toggle-container';
+    
+    
+
+    let toggleButton = document.createElement('div');
+    toggleButton.className = 'toggle-button';
+    toggleButton.innerHTML = "Zobraziť vrstvy";
+
+    let layerControls = document.createElement('div');
+    layerControls.className = 'layer-controls';
+
+    for (const [layerName, layerInfo] of Object.entries(mapLayers)) {
+    let layerCheckbox = document.createElement('label');
+    layerCheckbox.innerHTML = `<input type="checkbox" value="${layerName}"> ${layerName}<br>`;
+    layerControls.appendChild(layerCheckbox);
+
+    layerCheckbox.querySelector("input").addEventListener('change', function() {
+        const layerName = this.value;
+        if (this.checked) {
+            addWeatherLayer(layerName);
+            showLegend(layerInfo.code); // Zobraziť legendu pre vybranú vrstvu
+        } else {
+            removeWeatherLayer(layerInfo.code);
+            if (Object.keys(activeLayers).length === 0) {
+                $('#legend-container').empty();
+            }
+        }
+    });
+}
+
+// HTML obrázky pre výber typu mapy
+const mapTypeContainer = document.createElement('div');
+mapTypeContainer.innerHTML = '<div style="width: 100px; height: 2px; background: #000; margin-top: 3px;"></div>';
+mapTypeContainer.style.display = 'flex'; // Aby boli obrázky vedľa seba
+
+const satelliteMapButton = document.createElement('img');
+satelliteMapButton.src = 'dark.png'; // Nahraď URL obrázkom satelitnej mapy
+satelliteMapButton.style.width = '50px'; // Nastav šírku obrázka
+satelliteMapButton.style.height = '50px'; // Nastav výšku obrázka
+satelliteMapButton.style.cursor = 'pointer'; // Pridaj kurzor pointer pre kliknutie
+satelliteMapButton.title = 'Tmavá (dark) mapa'; // Tooltip pri hoveri
+satelliteMapButton.style.marginLeft = '0%';
+
+satelliteMapButton.style.marginTop = '10px';
+satelliteMapButton.style.position = 'absolute';
+satelliteMapButton.style.borderRadius = '20px';
+
+const streetsMapButton = document.createElement('img');
+streetsMapButton.src = 'light.png'; // Nahraď URL obrázkom ulično-terénnej mapy
+streetsMapButton.style.width = '50px'; // Nastav šírku obrázka
+streetsMapButton.style.height = '50px'; // Nastav výšku obrázka
+streetsMapButton.style.cursor = 'pointer'; // Pridaj kurzor pointer pre kliknutie
+streetsMapButton.title = 'Svetlá (light) mapa'; // Tooltip pri hoveri
+streetsMapButton.style.position = 'relative';
+streetsMapButton.style.marginLeft = '-40px';
+streetsMapButton.style.marginTop = '10px';
+streetsMapButton.style.borderRadius = '20px';
+
+
+
+
+const satelliteStandard = document.createElement('img');
+satelliteStandard.src = 'satellite.png'; // Nahraď URL obrázkom ulično-terénnej mapy
+satelliteStandard.style.width = '50px'; // Nastav šírku obrázka
+satelliteStandard.style.height = '50px'; // Nastav výšku obrázka
+satelliteStandard.style.cursor = 'pointer'; // Pridaj kurzor pointer pre kliknutie
+satelliteStandard.title = 'Pôvodná mapa satelitná'; // Tooltip pri hoveri
+satelliteStandard.style.position = 'relative';
+satelliteStandard.style.marginLeft = '10px';
+satelliteStandard.style.marginTop = '10px';
+satelliteStandard.style.borderRadius = '20px';
+
+
+// Pridanie obrázkov do panelu pod checkboxy
+mapTypeContainer.appendChild(satelliteMapButton);
+mapTypeContainer.appendChild(streetsMapButton);
+mapTypeContainer.appendChild(satelliteStandard);
+layerControls.appendChild(mapTypeContainer);
+
+// Zmena štýlu mapy na satelitnú
+satelliteMapButton.addEventListener('click', function() {
+    map.setStyle('mapbox://styles/mapbox/dark-v11'); // Satelitná mapa
+});
+
+// Zmena štýlu mapy na ulično-terénnu
+streetsMapButton.addEventListener('click', function() {
+    map.setStyle('mapbox://styles/mapbox/light-v11'); // Ulično-terénna mapa
+});
+
+satelliteStandard.addEventListener('click', function() {
+    map.setStyle('mapbox://styles/mapbox/satellite-streets-v11'); // Ulično-terénna mapa
+});
+
+// Tlačidlo pre zobrazenie celej obrazovky
+const fullscreenButton = document.createElement('button');
+fullscreenButton.className = 'toggle-button';
+fullscreenButton.innerHTML = '<img src="fullscreen_icon.png" style="width: 20px;" class="">'; // Text na tlačidle
+fullscreenButton.style.cursor = 'pointer'; // Kurzor pre klikateľnosť
+fullscreenButton.style.right = '0'; // Okraj pre oddelenie od ostatných prvkov
+fullscreenButton.style.position = 'absolute';
+fullscreenButton.style.top = '0';
+// Pridanie tlačidla do panelu
+mapTypeContainer.appendChild(fullscreenButton);
+
+// Funkcia na zobrazenie mapy na celú obrazovku
+fullscreenButton.addEventListener('click', function() {
+    if (!document.fullscreenElement) {
+        // Ak nie sme v režime celej obrazovky, prepneme sa do neho
+        document.documentElement.requestFullscreen().catch(err => {
+            console.error(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
+        });
+    } else {
+        // Ak sme už v režime celej obrazovky, opustíme ho
+        document.exitFullscreen();
+    }
+});
+
+
+    toggleButton.addEventListener('click', function() {
+        if ($(layerControls).is(":visible")) {
+            $(layerControls).hide();
+            toggleButton.innerHTML = "Zobraziť vrstvy";
+        } else {
+            $(layerControls).show();
+            toggleButton.innerHTML = "Skryť vrstvy";
+        }
+    });
+
+    layerControlsDiv.appendChild(toggleButton);
+    layerControlsDiv.appendChild(layerControls);
+    document.body.appendChild(layerControlsDiv);
+
+    let controlButtonsDiv = document.createElement('div');
+    controlButtonsDiv.className = 'controls';
+    controlButtonsDiv.innerHTML = `
+        <button id="prev">Späť -3h</button>
+        <button id="next">Ďalšie +3h</button>
+        <button id="play">Prehrať</button>
+        <button id="stop">Stopnúť</button>
+        <div class="time-display" id="time-display"></div>
+    `;
+
+    document.body.appendChild(controlButtonsDiv);
+
+    let animationInterval;
+
+    function updateAnimation() {
+        const nextDate = new Date(currentDate.getTime() + (3 * 60 * 60 * 1000));
+        currentDate = nextDate;
+        updateLayers();
+        updateTimeDisplay();
+    }
+
+    $('#play').on('click', function() {
+        if (!animationInterval) {
+            animationInterval = setInterval(updateAnimation, 1000); // Nastav interval na 1 sekundu
+        }
+    });
+
+    $('#stop').on('click', function() {
+        clearInterval(animationInterval);
+        animationInterval = null;
+    });
+
+    $('#prev').on('click', function() {
+        currentDate = new Date(currentDate.getTime() - (3 * 60 * 60 * 1000));
+        updateLayers();
+        updateTimeDisplay();
+    });
+
+    $('#next').on('click', function() {
+        currentDate = new Date(currentDate.getTime() + (3 * 60 * 60 * 1000));
+        updateLayers();
+        updateTimeDisplay();
+    });
+
+    updateLayers();
+    updateTimeDisplay();
+    
+function onMapClick(e) {
+  const lat = e.lngLat.lat;
+  const lon = e.lngLat.lng;
+
+  const slovakiaCzechBounds = {
+    north: 51.0,
+    south: 47.5,
+    west: 12.0,
+    east: 24.0
+  };
+
+  if (lat >= slovakiaCzechBounds.south && lat <= slovakiaCzechBounds.north &&
+    lon >= slovakiaCzechBounds.west && lon <= slovakiaCzechBounds.east) {
+
+    const target = e.originalEvent.target;
+    if (target.closest('.layer-controls') || target.closest('.toggle-button') || target.closest('button')) {
+      return;
+    }
+
+    const geocodeUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
+
+    fetch(geocodeUrl)
+      .then(response => response.json())
+      .then(geoData => {
+        const cityName = geoData.name;
+        const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
+
+        return fetch(forecastUrl)
+          .then(response => response.json())
+          .then(data => {
+            if (data.list && data.list.length > 0) {
+              const forecast = data.list.slice(0, 8);
+              let popupContent = `
+                                    <div id="overlay" class="overlay"></div>
+                                    <div id="custom-popup" class="custom-popup">
+                                        <button id="close-button" class="close-button">Zatvoriť</button>
+                                        <h2>${cityName}</h2>
+                                        <div class="popup-content">`;
+
+              function getWindDirection(degrees) {
+                const directions = ['S', 'SZ', 'SZZ', 'Z', 'JZZ', 'JZ', 'J', 'JV', 'JVV', 'V', 'SVV', 'SV'];
+                const index = Math.round(degrees / 45) % 8;
+                return directions[index];
+              }
+
+              forecast.forEach(entry => {
+                const time = new Date(entry.dt * 1000).toLocaleString();
+                const temp = Math.round(entry.main.temp);
+                const feelsLike = Math.round(entry.main.feels_like) !== undefined ? Math.round(entry.main.feels_like) : 'N/A';
+                const humidity = entry.main.humidity;
+                const windSpeed = entry.wind.speed;
+                const windGust = entry.wind.gust || 0;
+                const windDirection = getWindDirection(entry.wind.deg || 0);
+                const pressure = entry.main.pressure;
+                const rain = entry.rain ? entry.rain['3h'] : 0;
+                const snow = entry.snow ? entry.snow['3h'] : 0;
+                const weatherIcon = `https://www.meteopocasie.sk/wsymbols/animation/${entry.weather[0].icon}.gif`;
+
+                popupContent += `
+                                        <div class="popup-box">
+                                            <h4>${time}</h4>
+                                            <img src="${weatherIcon}" alt="${entry.weather[0].description}" class="weather-icon">
+                                            <p><b>Teplota:</b> ${temp} °C</p>
+                                            <p><b>Pocitová teplota:</b> ${feelsLike} °C</p>
+                                            <p><b>Tlak vzduchu:</b> ${pressure} hPa</p>
+                                            <p><b>Vlhkosť:</b> ${humidity} %</p>
+                                            <p><b>Rýchlosť vetra:</b> ${windSpeed} m/s</p>
+                                            <p><b>Nárazy vetra:</b> ${windGust} m/s</p>
+                                            <p><b>Smer vetra:</b> ${windDirection}</p>
+                                            <p><b>Dážď:</b> ${rain} mm</p>
+                                            <p><b>Sneh:</b> ${snow} mm</p>
+                                        </div>
+                                    `;
+              });
+
+              popupContent += `</div></div>`;
+
+              if (document.querySelector('#custom-popup')) {
+                document.querySelector('#custom-popup').remove();
+                document.querySelector('#overlay').remove();
+              }
+
+              document.body.insertAdjacentHTML('beforeend', popupContent);
+
+              document.getElementById('overlay').style.opacity = 1;
+              document.getElementById('custom-popup').classList.add('show');
+
+              document.getElementById('close-button').addEventListener('click', closePopup);
+            } else {
+              console.error('Nenašli sa predpovedné údaje.');
+            }
+          })
+          .catch(error => {
+            console.error('Chyba pri načítavaní dát:', error);
+          });
+      })
+      .catch(error => {
+        console.error('Chyba pri získavaní názvu mesta:', error);
+      });
+  } else {
+    console.log('Kliknutie mimo povolenú oblasť.');
+  }
+}
+
+function closePopup() {
+  const popup = document.getElementById('custom-popup');
+  const overlay = document.getElementById('overlay');
+  if (popup) {
+    popup.classList.remove('show');
+    setTimeout(() => popup.remove(), 300);
+  }
+  if (overlay) {
+    overlay.style.opacity = 0;
+    setTimeout(() => overlay.remove(), 300);
+  }
+}
+
+map.on('click', onMapClick);
+    map.on('click', function(e) {
+  const numberOfRipples = 3;
+  const maxDiameter = Math.max($('#map').width(), $('#map').height());
+  const size = maxDiameter * 2;
+
+  for (let i = 0; i < numberOfRipples; i++) {
+    const ripple = document.createElement('div');
+    ripple.className = `ripple ripple-delay-${i+1}`;
+    document.body.appendChild(ripple); // Append ripple to body instead of map
+
+    const x = e.point.x - size / 2; // Use e.point.x for Mapbox GL JS
+    const y = e.point.y - size / 2; // Use e.point.y for Mapbox GL JS
+
+    $(ripple).css({
+      width: size,
+      height: size,
+      left: x,
+      top: y
+    });
+
+    ripple.addEventListener('animationend', function() {
+      ripple.remove();
+    });
+  }
+
+  // Add small circle at the click location
+  const circle = document.createElement('div');
+  circle.className = 'cursor';
+  document.body.appendChild(circle);
+
+  $(circle).css({
+    left: e.point.x,
+    top: e.point.y,
+    width: '5px',
+    height: '5px'
+  });
+
+  setTimeout(() => circle.remove(), 500); // Remove the circle after a short delay
+});
+
+// Funkcia na zobrazenie modalu po načítaní stránky
+window.onload = function() {
+  const modal = document.getElementById("welcomeModal");
+  const closeModal = document.getElementById("closeModal");
+
+  // Zobraziť modal
+  modal.style.display = "block";
+
+  // Ak používateľ klikne na "X", modal sa zatvorí
+  closeModal.onclick = function() {
+    modal.style.display = "none";
+  };
+
+  // Ak používateľ klikne kdekoľvek mimo modalu, tiež sa zatvorí
+  window.onclick = function(event) {
+    if (event.target == modal) {
+      modal.style.display = "none";
+    }
+  };
+};
+
+document.addEventListener('mousemove', function(e) {
+  const cursor = document.querySelector('.cursor');
+  cursor.style.left = e.pageX + 'px';
+  cursor.style.top = e.pageY + 'px';
+});
+
+document.addEventListener('click', function() {
+  const cursor = document.querySelector('.cursor');
+  cursor.style.width = '5px';
+  cursor.style.height = '5px';
+});
+    setTimeout(() => 
+      circle.remove(), 
+    500);
+});
+
+// Označiť checkbox pre Teplota ako checked po načítaní mapy
+$(document).ready(function() {
+    $('input[value="Teplota"]').prop('checked', true); // Predvolené označenie checkboxu
+    addWeatherLayer("Teplota"); // Pridá vrstvu Teplota
+    showLegend(mapLayers["Teplota"].code); // Zobrazí legendu pre vrstvu Teplota
+});
+</script>
+
+</body>
+</html>
